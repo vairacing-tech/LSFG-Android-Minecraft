@@ -1,0 +1,68 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.lsfg'
+version = '0.1.0'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'Fabric'
+        url = 'https://maven.fabricmc.net/'
+    }
+}
+
+dependencies {
+    compileOnly 'net.fabricmc:fabric-loader:0.16.10'
+}
+
+task buildNativeArm64(type: Exec) {
+    description = 'Compiles the liblsfg-minecraft.so Android ARM64 native library using CMake and NDK.'
+    group = 'build'
+
+    def cmakeBin = "C:/Users/CJF/AppData/Local/Android/Sdk/cmake/3.22.1/bin/cmake.exe"
+    def ninjaBin = "C:/Users/CJF/AppData/Local/Android/Sdk/cmake/3.22.1/bin/ninja.exe"
+    def ndkDir = "C:/Users/CJF/AppData/Local/Android/Sdk/ndk/27.0.12077973"
+    def buildDir = file("${buildDir}/native/arm64-v8a")
+    def srcDir = file("src/main/cpp")
+    def targetDir = file("src/main/resources/native/android-arm64")
+
+    doFirst {
+        buildDir.mkdirs()
+        targetDir.mkdirs()
+    }
+
+    commandLine cmakeBin,
+        '-B', buildDir.absolutePath,
+        '-S', srcDir.absolutePath,
+        '-GNinja',
+        "-DCMAKE_MAKE_PROGRAM=${ninjaBin}",
+        "-DCMAKE_TOOLCHAIN_FILE=${ndkDir}/build/cmake/android.toolchain.cmake",
+        '-DANDROID_ABI=arm64-v8a',
+        '-DANDROID_PLATFORM=android-29',
+        '-DCMAKE_BUILD_TYPE=Release'
+
+    doLast {
+        exec {
+            commandLine cmakeBin, '--build', buildDir.absolutePath
+        }
+        copy {
+            from "${buildDir.absolutePath}/liblsfg-minecraft.so"
+            into targetDir
+        }
+    }
+}
+
+processResources.dependsOn buildNativeArm64
+
+jar {
+    archiveBaseName.set('lsfg-minecraft')
+    archiveVersion.set('0.1.0')
+    from(sourceSets.main.output)
+}

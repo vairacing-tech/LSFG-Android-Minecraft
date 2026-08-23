@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "lsfg-minecraft",
+  "version": "0.1.0",
+  "name": "LSFG Minecraft",
+  "description": "Low-latency Lossless Scaling Frame Generation backend for Minecraft Java on Android / Vulkan.",
+  "authors": [
+    "vairacing-tech",
+    "FrankBarretta"
+  ],
+  "contact": {
+    "homepage": "https://github.com/vairacing-tech/LSFG-Android-Minecraft",
+    "sources": "https://github.com/vairacing-tech/LSFG-Android-Minecraft"
+  },
+  "license": "LGPL-3.0",
+  "icon": "assets/lsfg/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.lsfg.minecraft.LsfgMod"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.14.0",
+    "minecraft": ">=1.20"
+  },
+  "suggests": {
+    "sodium": "*",
+    "iris": "*"
+  }
+}

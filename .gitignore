@@ -5,3 +5,6 @@ da-analizzare/
 CLAUDE.md
 .claude/
 _analysis/
+latest.log
+latestlog.txt
+logcat*.txt
