@@ -33,10 +33,44 @@ Java_com_lsfg_minecraft_LsfgNativeBridge_getNativeVersion(JNIEnv *env, jclass /*
     return env->NewStringUTF(kVersion);
 }
 
+static bool is_system_property_true(JNIEnv *env, const char *propName) {
+    if (env == nullptr || propName == nullptr) return false;
+    jclass sysClass = env->FindClass("java/lang/System");
+    if (!sysClass) {
+        if (env->ExceptionCheck()) env->ExceptionClear();
+        return false;
+    }
+    jmethodID getProp = env->GetStaticMethodID(sysClass, "getProperty", "(Ljava/lang/String;)Ljava/lang/String;");
+    if (!getProp) {
+        if (env->ExceptionCheck()) env->ExceptionClear();
+        return false;
+    }
+    jstring jName = env->NewStringUTF(propName);
+    jstring jVal = (jstring)env->CallStaticObjectMethod(sysClass, getProp, jName);
+    env->DeleteLocalRef(jName);
+    if (env->ExceptionCheck()) {
+        env->ExceptionClear();
+        return false;
+    }
+    if (!jVal) return false;
+    const char *str = env->GetStringUTFChars(jVal, nullptr);
+    bool result = false;
+    if (str != nullptr) {
+        if (strcasecmp(str, "true") == 0 || strcmp(str, "1") == 0) {
+            result = true;
+        }
+        env->ReleaseStringUTFChars(jVal, str);
+    }
+    env->DeleteLocalRef(jVal);
+    return result;
+}
+
 JNIEXPORT jint JNICALL
-Java_com_lsfg_minecraft_LsfgNativeBridge_initNativeBackend(JNIEnv * /*env*/, jclass /*clazz*/) {
+Java_com_lsfg_minecraft_LsfgNativeBridge_initNativeBackend(JNIEnv *env, jclass /*clazz*/) {
     LOGI("LSFG Minecraft Native Backend initialized (build: %s)", kVersion);
-    lsfg_mc::init_passive_vulkan_diagnostics();
+    bool v1_probe = is_system_property_true(env, "superresolution.lsfg_bridge_probe");
+    bool v2_probe = is_system_property_true(env, "superresolution.lsfg_bridge_v2_probe");
+    lsfg_mc::init_passive_vulkan_diagnostics(v1_probe, v2_probe);
     return 0;
 }
 
@@ -47,6 +81,17 @@ Java_com_lsfg_minecraft_LsfgNativeBridge_isPlatformSupported(JNIEnv * /*env*/, j
 #else
     return JNI_FALSE;
 #endif
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_lsfg_minecraft_LsfgNativeBridge_isVulkanObserved(JNIEnv * /*env*/, jclass /*clazz*/) {
+    return lsfg_mc::is_vulkan_observed() ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jstring JNICALL
+Java_com_lsfg_minecraft_LsfgNativeBridge_getProbeSnapshot(JNIEnv *env, jclass /*clazz*/) {
+    std::string snap = lsfg_mc::get_probe_snapshot_string();
+    return env->NewStringUTF(snap.c_str());
 }
 
 JNIEXPORT jint JNICALL
