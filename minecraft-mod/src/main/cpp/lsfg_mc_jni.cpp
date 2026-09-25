@@ -131,4 +131,68 @@ Java_com_lsfg_minecraft_LsfgNativeBridge_shutdown(JNIEnv * /*env*/, jclass /*cla
     LOGI("LSFG Minecraft Native Backend shutting down.");
 }
 
+JNIEXPORT jboolean JNICALL
+Java_com_lsfg_minecraft_LsfgNativeBridge_getRuntimeStatus(
+        JNIEnv *env, jclass /*clazz*/, jobject statusObj) {
+    if (statusObj == nullptr) return JNI_FALSE;
+
+    lsfg_mc::LsfgRuntimeStatus s{};
+    s.structSize = sizeof(lsfg_mc::LsfgRuntimeStatus);
+    s.abiVersion = 3;
+
+    int32_t res = lsfg_mc::get_runtime_status(&s);
+    if (res != 0) {
+        return JNI_FALSE;
+    }
+
+    jclass cls = env->GetObjectClass(statusObj);
+    if (cls == nullptr) return JNI_FALSE;
+
+    jfieldID fState = env->GetFieldID(cls, "state", "I");
+    jfieldID fFactor = env->GetFieldID(cls, "factor", "I");
+    jfieldID fNativePres = env->GetFieldID(cls, "nativePresented", "J");
+    jfieldID fGenPres = env->GetFieldID(cls, "generatedPresented", "J");
+    jfieldID fGenAttempts = env->GetFieldID(cls, "generationAttempts", "J");
+    jfieldID fGenSuccess = env->GetFieldID(cls, "generationSuccess", "J");
+    jfieldID fGenFallback = env->GetFieldID(cls, "generationFallback", "J");
+    jfieldID fNativeFps = env->GetFieldID(cls, "nativeFps", "F");
+    jfieldID fOutputFps = env->GetFieldID(cls, "outputFps", "F");
+    jfieldID fComputeMs = env->GetFieldID(cls, "lastLsfgComputeMs", "F");
+
+    if (fState) env->SetIntField(statusObj, fState, s.state);
+    if (fFactor) env->SetIntField(statusObj, fFactor, s.factor);
+    jfieldID fReqFactor = env->GetFieldID(cls, "requestedFactor", "I");
+    if (fReqFactor) env->SetIntField(statusObj, fReqFactor, static_cast<jint>(s.reserved[0]));
+    if (fNativePres) env->SetLongField(statusObj, fNativePres, static_cast<jlong>(s.nativePresented));
+    if (fGenPres) env->SetLongField(statusObj, fGenPres, static_cast<jlong>(s.generatedPresented));
+    if (fGenAttempts) env->SetLongField(statusObj, fGenAttempts, static_cast<jlong>(s.generationAttempts));
+    if (fGenSuccess) env->SetLongField(statusObj, fGenSuccess, static_cast<jlong>(s.generationSuccess));
+    if (fGenFallback) env->SetLongField(statusObj, fGenFallback, static_cast<jlong>(s.generationFallback));
+    if (fNativeFps) env->SetFloatField(statusObj, fNativeFps, s.nativeFps);
+    if (fOutputFps) env->SetFloatField(statusObj, fOutputFps, s.outputFps);
+    if (fComputeMs) env->SetFloatField(statusObj, fComputeMs, s.lastLsfgComputeMs);
+
+    return JNI_TRUE;
+}
+
+JNIEXPORT jint JNICALL
+Java_com_lsfg_minecraft_LsfgNativeBridge_setRuntimeConfig(
+        JNIEnv * /*env*/, jclass /*clazz*/, jint enabled, jint factor, jint maxEvents, jint armDelayMs) {
+    lsfg_mc::LsfgRuntimeConfig cfg{};
+    cfg.structSize = sizeof(lsfg_mc::LsfgRuntimeConfig);
+    cfg.abiVersion = 3;
+    cfg.enabled = enabled;
+    cfg.factor = factor;
+    cfg.maxEvents = maxEvents;
+    cfg.armDelayMs = armDelayMs;
+
+    return lsfg_mc::set_runtime_config(&cfg);
+}
+
+JNIEXPORT jint JNICALL
+Java_com_lsfg_minecraft_LsfgNativeBridge_notifyContentDiscontinuity(
+        JNIEnv * /*env*/, jclass /*clazz*/) {
+    return lsfg_mc::notify_content_discontinuity();
+}
+
 } // extern "C"

@@ -26,5 +26,7 @@ public final class LsfgNativeBridge {
 
     public static native int getCapabilities();
 
+    public static native int notifyContentDiscontinuity();
+
     public static native void shutdown();
 }
